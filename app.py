@@ -20,8 +20,14 @@ st.write("Switch between tabs below to see how AI architecture evolved over time
 # Securely grab the Groq API key from environment variables or Streamlit secrets
 
 
-# Securely grab the Groq API key checking Streamlit secrets first, then environment, then fallback to sidebar
-GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY") or st.sidebar.text_input("Enter Groq API Key:", type="password")
+
+# Force users to input their own personal key in the sidebar
+GROQ_API_KEY = st.sidebar.text_input("Enter your personal Groq API Key:", type="password")
+
+# Block the application from running until a key is provided
+if not GROQ_API_KEY:
+    st.info("Please enter your own Groq API key in the sidebar to use this application.")
+    st.stop()  # Instantly stops execution here so your code doesn't crash downstream
 
 # ==========================================
 # 2. DATASET & BACKEND SETUP (Cached for speed)
