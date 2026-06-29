@@ -9,6 +9,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.embeddings import Embeddings
 from sentence_transformers import SentenceTransformer
 
+
 # ==========================================
 # 1. PAGE CONFIGURATION & UI STYLING
 # ==========================================
@@ -17,7 +18,10 @@ st.title("🔮 MythBuster AI: From Traditional ML to RAG")
 st.write("Switch between tabs below to see how AI architecture evolved over time!")
 
 # Securely grab the Groq API key from environment variables or Streamlit secrets
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY") or st.sidebar.text_input("Enter Groq API Key:", type="password")
+
+
+# Securely grab the Groq API key checking Streamlit secrets first, then environment, then fallback to sidebar
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY") or st.sidebar.text_input("Enter Groq API Key:", type="password")
 
 # ==========================================
 # 2. DATASET & BACKEND SETUP (Cached for speed)
@@ -40,13 +44,18 @@ def initialize_backends():
         "slenderman": "🔴 DEBUNKED (Traditional ML): 2009 Something Awful forum photoshop contest creation."
     }
 
-    # Phase 3 RAG Knowledge Base
-    knowledge_base = [
-        "Myth: Polybius Arcade Game. Fact: An urban legend claims a 1981 arcade game caused amnesia and insomnia in players before vanishing. In reality, no cabinets or ROMs exist, and it was tracked back to a hoax origin on the website Coinop.org in the early 2000s.",
-        "Myth: The Slender Man Stabbing. Fact: While Slenderman is fictional, a real-world crime occurred in Waukesha, Wisconsin in 2014 where two 12-year-old girls attacked a classmate, claiming they did it to appease the fictional character.",
-        "Myth: The Black Eyed Children. Fact: Urban legends describe paranormal pale children with pitch-black eyes asking to enter cars or homes. It originated entirely from reporter Brian Bethel in 1996 via a ghost-story mailing list; there is zero physical evidence.",
-        "Myth: The Flatwoods Monster. Fact: In 1952 in West Virginia, youths saw a glowing object crash and a robed figure with a spade-shaped head. The US Air Force investigated it as 'Project Blue Book' and concluded the crash was a meteor and the monster was a startled barn owl perched high up."
-    ]
+    # Phase 3 RAG Knowledge Base - Dynamically loaded from text file
+    knowledge_base_path = os.path.join("data", "knowledge_base.txt")
+    
+    if os.path.exists(knowledge_base_path):
+        with open(knowledge_base_path, "r", encoding="utf-8") as f:
+            # Read each line, remove empty spaces, and ignore empty lines
+            knowledge_base = [line.strip() for line in f.readlines() if line.strip()]
+    else:
+        # Fallback security default in case the file path isn't found locally during initial tests
+        knowledge_base = [
+            "Myth: Polybius Arcade Game. Fact: An urban legend claims a 1981 arcade game caused amnesia and insomnia in players before vanishing. In reality, no cabinets or ROMs exist, and it was tracked back to a hoax origin on the website Coinop.org in the early 2000s."
+        ]
     
     class LangChainEmbeddingsWrapper(Embeddings):
         def __init__(self): self.model = SentenceTransformer('all-MiniLM-L6-v2')
